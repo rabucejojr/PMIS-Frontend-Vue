@@ -159,20 +159,20 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  const updateTask = async (id: string, updates: Partial<Task>) => {
+  const updateTask = async (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => {
     isLoading.value = true
     try {
       // TODO: Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 300))
-      
+
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
-        const updatedTask = {
+        tasks.value[index] = {
           ...tasks.value[index],
           ...updates,
           updatedAt: new Date().toISOString()
-        }
-        tasks.value[index] = updatedTask
+        } as Task
+        const updatedTask = tasks.value[index]
         
         return { success: true, data: updatedTask }
       }

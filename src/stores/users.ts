@@ -184,20 +184,20 @@ export const useUsersStore = defineStore('users', () => {
     }
   }
 
-  const updateUser = async (id: string, updates: Partial<UserProfile>) => {
+  const updateUser = async (id: string, updates: Partial<Omit<UserProfile, 'id' | 'joinedAt' | 'lastActive'>>) => {
     isLoading.value = true
     try {
       // TODO: Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
-        const updatedUser = {
+        users.value[index] = {
           ...users.value[index],
           ...updates,
           lastActive: new Date().toISOString()
-        }
-        users.value[index] = updatedUser
+        } as UserProfile
+        const updatedUser = users.value[index]
         
         return { success: true, data: updatedUser }
       }

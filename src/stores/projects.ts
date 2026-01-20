@@ -174,20 +174,20 @@ export const useProjectsStore = defineStore('projects', () => {
     }
   }
 
-  const updateProject = async (id: string, updates: Partial<Project>) => {
+  const updateProject = async (id: string, updates: Partial<Omit<Project, 'id' | 'createdAt' | 'updatedAt'>>) => {
     isLoading.value = true
     try {
       // TODO: Replace with actual API call
       await new Promise(resolve => setTimeout(resolve, 500))
-      
+
       const index = projects.value.findIndex(p => p.id === id)
       if (index !== -1) {
-        const updatedProject = {
+        projects.value[index] = {
           ...projects.value[index],
           ...updates,
           updatedAt: new Date().toISOString()
-        }
-        projects.value[index] = updatedProject
+        } as Project
+        const updatedProject = projects.value[index]
         
         return { success: true, data: updatedProject }
       }
