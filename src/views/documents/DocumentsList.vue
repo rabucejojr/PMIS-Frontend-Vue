@@ -8,8 +8,7 @@ import {
   Trash2, 
   FileText, 
   File,
-  MoreHorizontal,
-  Filter
+  MoreHorizontal
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -61,8 +60,6 @@ const uploadForm = ref({
   description: '',
   file: null as File | null
 })
-
-const fileInput = ref<HTMLInputElement | null>(null)
 
 const filteredDocuments = computed(() => {
   let docs = documentsStore.documents

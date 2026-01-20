@@ -167,13 +167,14 @@ export const useTasksStore = defineStore('tasks', () => {
       
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
-        tasks.value[index] = {
+        const updatedTask = {
           ...tasks.value[index],
           ...updates,
           updatedAt: new Date().toISOString()
         }
+        tasks.value[index] = updatedTask
         
-        return { success: true, data: tasks.value[index] }
+        return { success: true, data: updatedTask }
       }
       
       return { success: false, error: 'Task not found' }

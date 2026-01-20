@@ -1,6 +1,5 @@
-<!-- views/tasks/TasksBoard.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useTasksStore, useProjectsStore, type TaskStatus } from '@/stores'
 import { Plus, MoreHorizontal, Edit, Trash2, Calendar, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'

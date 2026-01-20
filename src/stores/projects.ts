@@ -182,13 +182,14 @@ export const useProjectsStore = defineStore('projects', () => {
       
       const index = projects.value.findIndex(p => p.id === id)
       if (index !== -1) {
-        projects.value[index] = {
+        const updatedProject = {
           ...projects.value[index],
           ...updates,
           updatedAt: new Date().toISOString()
         }
+        projects.value[index] = updatedProject
         
-        return { success: true, data: projects.value[index] }
+        return { success: true, data: updatedProject }
       }
       
       return { success: false, error: 'Project not found' }

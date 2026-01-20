@@ -192,13 +192,14 @@ export const useUsersStore = defineStore('users', () => {
       
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
-        users.value[index] = {
+        const updatedUser = {
           ...users.value[index],
           ...updates,
           lastActive: new Date().toISOString()
         }
+        users.value[index] = updatedUser
         
-        return { success: true, data: users.value[index] }
+        return { success: true, data: updatedUser }
       }
       
       return { success: false, error: 'User not found' }

@@ -99,7 +99,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  const register = async (username: string, email: string, password: string) => {
+  const register = async (username: string, email: string, _password: string) => {
     isLoading.value = true
     try {
       // TODO: Replace with actual API call
