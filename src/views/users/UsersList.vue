@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUsersStore, type UserRole, type UserStatus } from '@/stores'
+import { useUsersStore, type UserRole, type UserStatus, type UserProfile } from '@/stores'
 import { Plus, Search, MoreHorizontal, Edit, Trash2, Mail, Phone } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -45,6 +45,8 @@ const statusFilter = ref<UserStatus | 'all'>('all')
 const showDialog = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const selectedUserId = ref<string | null>(null)
+const showDeleteDialog = ref(false)
+const userToDelete = ref<UserProfile | null>(null)
 
 const formData = ref({
   email: '',
@@ -155,10 +157,22 @@ const handleSubmit = async () => {
   showDialog.value = false
 }
 
-const deleteUser = async (id: string) => {
-  if (confirm('Are you sure you want to delete this user?')) {
-    await usersStore.deleteUser(id)
+const openDeleteDialog = (user: UserProfile) => {
+  userToDelete.value = user
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (userToDelete.value) {
+    await usersStore.deleteUser(userToDelete.value.id)
+    showDeleteDialog.value = false
+    userToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  userToDelete.value = null
 }
 
 const clearFilters = () => {
@@ -317,8 +331,8 @@ onMounted(() => {
                     <Edit class="h-4 w-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    @click="deleteUser(user.id)"
+                  <DropdownMenuItem
+                    @click="openDeleteDialog(user)"
                     class="text-destructive"
                   >
                     <Trash2 class="h-4 w-4 mr-2" />
@@ -449,6 +463,22 @@ onMounted(() => {
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete User</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ userToDelete?.fullName }}"? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="cancelDelete">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>

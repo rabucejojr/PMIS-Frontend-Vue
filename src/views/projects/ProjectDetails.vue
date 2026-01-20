@@ -1,20 +1,28 @@
 <script setup lang="ts">
-import { onMounted, computed } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useProjectsStore } from '@/stores'
-import { 
-  ArrowLeft, 
-  Edit, 
-  Trash2, 
-  Calendar, 
-  DollarSign, 
-  Users, 
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Calendar,
+  DollarSign,
+  Users,
   Building2,
   TrendingUp
 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import PageHeader from '@/components/shared/PageHeader.vue'
 import StatusBadge from '@/components/shared/StatusBadge.vue'
 import PriorityBadge from '@/components/shared/PriorityBadge.vue'
@@ -24,6 +32,7 @@ const router = useRouter()
 const projectsStore = useProjectsStore()
 
 const projectId = route.params.id as string
+const showDeleteDialog = ref(false)
 
 const project = computed(() => projectsStore.currentProject)
 
@@ -51,13 +60,20 @@ const handleEdit = () => {
   router.push(`/projects/${projectId}/edit`)
 }
 
-const handleDelete = async () => {
-  if (confirm('Are you sure you want to delete this project?')) {
-    const result = await projectsStore.deleteProject(projectId)
-    if (result.success) {
-      router.push('/projects')
-    }
+const openDeleteDialog = () => {
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  const result = await projectsStore.deleteProject(projectId)
+  if (result.success) {
+    router.push('/projects')
   }
+  showDeleteDialog.value = false
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
 }
 
 onMounted(() => {
@@ -83,7 +99,7 @@ onMounted(() => {
           <Edit class="h-4 w-4 mr-2" />
           Edit
         </Button>
-        <Button variant="destructive" @click="handleDelete">
+        <Button variant="destructive" @click="openDeleteDialog">
           <Trash2 class="h-4 w-4 mr-2" />
           Delete
         </Button>
@@ -246,5 +262,21 @@ onMounted(() => {
         </CardContent>
       </Card>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Project</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ project?.title }}"? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="cancelDelete">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

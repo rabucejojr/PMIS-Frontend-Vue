@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useTasksStore, useProjectsStore, type TaskStatus } from '@/stores'
+import { useTasksStore, useProjectsStore, type TaskStatus, type Task } from '@/stores'
 import { Plus, MoreHorizontal, Edit, Trash2, Calendar, User } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,6 +43,8 @@ const showDialog = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const selectedTaskId = ref<string | null>(null)
 const draggedTask = ref<string | null>(null)
+const showDeleteDialog = ref(false)
+const taskToDelete = ref<Task | null>(null)
 
 const formData = ref({
   title: '',
@@ -127,10 +129,22 @@ const handleSubmit = async () => {
   showDialog.value = false
 }
 
-const deleteTask = async (id: string) => {
-  if (confirm('Are you sure you want to delete this task?')) {
-    await tasksStore.deleteTask(id)
+const openDeleteDialog = (task: Task) => {
+  taskToDelete.value = task
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (taskToDelete.value) {
+    await tasksStore.deleteTask(taskToDelete.value.id)
+    showDeleteDialog.value = false
+    taskToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  taskToDelete.value = null
 }
 
 // Drag and Drop handlers
@@ -212,8 +226,8 @@ onMounted(() => {
                       <Edit class="h-4 w-4 mr-2" />
                       Edit
                     </DropdownMenuItem>
-                    <DropdownMenuItem 
-                      @click="deleteTask(task.id)"
+                    <DropdownMenuItem
+                      @click="openDeleteDialog(task)"
                       class="text-destructive"
                     >
                       <Trash2 class="h-4 w-4 mr-2" />
@@ -367,6 +381,22 @@ onMounted(() => {
             </Button>
           </DialogFooter>
         </form>
+      </DialogContent>
+    </Dialog>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Task</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ taskToDelete?.title }}"? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="cancelDelete">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   </div>
