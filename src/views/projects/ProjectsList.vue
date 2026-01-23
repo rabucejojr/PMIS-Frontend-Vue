@@ -132,7 +132,7 @@ onMounted(() => {
 
       <div class="flex gap-2">
         <Select v-model="statusFilter">
-          <SelectTrigger class="w-[140px]">
+          <SelectTrigger class="w-35">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
@@ -146,7 +146,7 @@ onMounted(() => {
         </Select>
 
         <Select v-model="priorityFilter">
-          <SelectTrigger class="w-[140px]">
+          <SelectTrigger class="w-35">
             <SelectValue placeholder="Priority" />
           </SelectTrigger>
           <SelectContent>
@@ -180,7 +180,7 @@ onMounted(() => {
             <TableHead>Budget</TableHead>
             <TableHead>Progress</TableHead>
             <TableHead>End Date</TableHead>
-            <TableHead class="w-[70px]"></TableHead>
+            <TableHead class="w-17.5"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

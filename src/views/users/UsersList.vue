@@ -51,6 +51,7 @@ const userToDelete = ref<UserProfile | null>(null)
 const formData = ref({
   email: '',
   username: '',
+  password: '',
   fullName: '',
   role: 'staff' as UserRole,
   department: '',
@@ -119,6 +120,7 @@ const openCreateDialog = () => {
   formData.value = {
     email: '',
     username: '',
+    password: '',
     fullName: '',
     role: 'staff',
     department: '',
@@ -137,6 +139,7 @@ const openEditDialog = (userId: string) => {
     formData.value = {
       email: user.email,
       username: user.username,
+      password: '',
       fullName: user.fullName,
       role: user.role,
       department: user.department,
@@ -390,6 +393,17 @@ onMounted(() => {
                 v-model="formData.username"
                 placeholder="jdelacruz"
                 required
+              />
+            </div>
+
+            <div class="grid gap-2">
+              <Label for="password">Password {{ dialogMode === 'create' ? '*' : '(leave blank to keep current)' }}</Label>
+              <Input
+                id="password"
+                v-model="formData.password"
+                type="password"
+                placeholder="••••••••"
+                :required="dialogMode === 'create'"
               />
             </div>
 
