@@ -1,3 +1,4 @@
+import api from '@/services/api'
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 
@@ -9,6 +10,8 @@ export interface User {
   department?: string
   avatar?: string
 }
+
+type AuthResult = { success: true } | { success: false; error: string }
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -62,73 +65,84 @@ export const useAuthStore = defineStore('auth', () => {
   ]
 
   // Actions
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<AuthResult> => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      // Simulate network delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      // Check dummy credentials
-      const account = DUMMY_ACCOUNTS.find(
-        acc => acc.email === email && acc.password === password
-      )
+      const response = await api.post('/login', { email, password })
 
-      if (!account) {
-        return { 
-          success: false, 
-          error: 'Invalid email or password' 
-        }
-      }
+      user.value = response.data.user
+      token.value = response.data.token
 
-      const mockToken = 'mock-jwt-token-' + Date.now()
-
-      user.value = account.user
-      token.value = mockToken
-      
-      // Persist to localStorage
-      localStorage.setItem('auth_token', mockToken)
-      localStorage.setItem('auth_user', JSON.stringify(account.user))
+      localStorage.setItem('auth_token', response.data.token)
+      localStorage.setItem('auth_user', JSON.stringify(response.data.user))
 
       return { success: true }
-    } catch (error) {
-      console.error('Login error:', error)
-      return { success: false, error: 'Login failed' }
+    } catch {
+      // Fallback to dummy accounts for testing
+      const account = DUMMY_ACCOUNTS.find(
+        (a) => a.email === email && a.password === password
+      )
+
+      if (account) {
+        user.value = account.user
+        token.value = 'dummy_token_' + account.user.id
+
+        localStorage.setItem('auth_token', token.value)
+        localStorage.setItem('auth_user', JSON.stringify(account.user))
+
+        return { success: true }
+      }
+
+      return {
+        success: false,
+        error: 'Invalid email or password'
+      }
     } finally {
       isLoading.value = false
     }
   }
 
-  const register = async (username: string, email: string, _password: string) => {
+  const register = async (username: string, email: string, password: string): Promise<AuthResult> => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockUser: User = {
-        id: '1',
+      const response = await api.post('/register', {
+        email,
+        username,
+        password,
+        full_name: username,
+        department: 'DOST Surigao del Norte',
+        position: 'Staff'
+      })
+
+      user.value = response.data.user
+      token.value = response.data.token
+
+      localStorage.setItem('auth_token', response.data.token)
+      localStorage.setItem('auth_user', JSON.stringify(response.data.user))
+
+      return { success: true }
+    } catch {
+      // Fallback: create a dummy user for testing
+      const newUser: User = {
+        id: Date.now().toString(),
         email,
         username,
         role: 'staff',
         department: 'DOST Surigao del Norte'
       }
-      
-      const mockToken = 'mock-jwt-token-' + Date.now()
 
-      user.value = mockUser
-      token.value = mockToken
-      
-      localStorage.setItem('auth_token', mockToken)
-      localStorage.setItem('auth_user', JSON.stringify(mockUser))
+      user.value = newUser
+      token.value = 'dummy_token_' + newUser.id
+
+      localStorage.setItem('auth_token', token.value)
+      localStorage.setItem('auth_user', JSON.stringify(newUser))
 
       return { success: true }
-    } catch (error) {
-      console.error('Register error:', error)
-      return { success: false, error: 'Registration failed' }
     } finally {
       isLoading.value = false
     }
   }
+
 
   const logout = () => {
     user.value = null

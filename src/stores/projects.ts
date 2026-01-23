@@ -1,226 +1,228 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import api from "@/services/api";
 
-export type ProjectStatus = 'draft' | 'active' | 'on-hold' | 'completed' | 'archived'
-export type ProjectPriority = 'low' | 'medium' | 'high' | 'critical'
+export type ProjectStatus =
+  | "draft"
+  | "active"
+  | "on-hold"
+  | "completed"
+  | "archived";
+export type ProjectPriority = "low" | "medium" | "high" | "critical";
 
 export interface Project {
-  id: string
-  title: string
-  description: string
-  status: ProjectStatus
-  priority: ProjectPriority
-  startDate: string
-  endDate: string
-  budget: number
-  spent: number
-  progress: number
-  projectManager: string
-  department: string
-  teamMembers: string[]
-  createdAt: string
-  updatedAt: string
+  id: string;
+  title: string;
+  description: string;
+  status: ProjectStatus;
+  priority: ProjectPriority;
+  startDate: string;
+  endDate: string;
+  budget: number;
+  spent: number;
+  progress: number;
+  projectManager: string;
+  department: string;
+  teamMembers: string[];
+  createdAt: string;
+  updatedAt: string;
 }
 
-export const useProjectsStore = defineStore('projects', () => {
+export const useProjectsStore = defineStore("projects", () => {
   // State
-  const projects = ref<Project[]>([])
-  const isLoading = ref(false)
-  const currentProject = ref<Project | null>(null)
+  const projects = ref<Project[]>([]);
+  const isLoading = ref(false);
+  const currentProject = ref<Project | null>(null);
 
   // Getters
-  const activeProjects = computed(() => 
-    projects.value.filter(p => p.status === 'active')
-  )
-  
-  const completedProjects = computed(() => 
-    projects.value.filter(p => p.status === 'completed')
-  )
-  
+  const activeProjects = computed(() =>
+    projects.value.filter((p) => p.status === "active"),
+  );
+
+  const completedProjects = computed(() =>
+    projects.value.filter((p) => p.status === "completed"),
+  );
+
   const projectsByStatus = computed(() => {
     const grouped: Record<ProjectStatus, Project[]> = {
       draft: [],
       active: [],
-      'on-hold': [],
+      "on-hold": [],
       completed: [],
-      archived: []
-    }
-    
-    projects.value.forEach(project => {
-      grouped[project.status].push(project)
-    })
-    
-    return grouped
-  })
+      archived: [],
+    };
 
-  const totalBudget = computed(() => 
-    projects.value.reduce((sum, p) => sum + p.budget, 0)
-  )
+    projects.value.forEach((project) => {
+      grouped[project.status].push(project);
+    });
 
-  const totalSpent = computed(() => 
-    projects.value.reduce((sum, p) => sum + p.spent, 0)
-  )
+    return grouped;
+  });
+
+  const totalBudget = computed(() =>
+    projects.value.reduce((sum, p) => sum + p.budget, 0),
+  );
+
+  const totalSpent = computed(() =>
+    projects.value.reduce((sum, p) => sum + p.spent, 0),
+  );
+
+  // Helper function to map API response to frontend format
+  const mapProject = (apiProject: any): Project => ({
+    id: apiProject.id?.toString() || "",
+    title: apiProject.title || "",
+    description: apiProject.description || "",
+    status: apiProject.status || "draft",
+    priority: apiProject.priority || "medium",
+    startDate: apiProject.start_date || "",
+    endDate: apiProject.end_date || "",
+    budget: parseFloat(apiProject.budget) || 0,
+    spent: parseFloat(apiProject.spent) || 0,
+    progress: apiProject.progress ?? 0,
+    projectManager: apiProject.project_manager || "",
+    department: apiProject.department || "",
+    teamMembers: Array.isArray(apiProject.team_members)
+      ? apiProject.team_members
+      : [],
+    createdAt: apiProject.created_at || "",
+    updatedAt: apiProject.updated_at || "",
+  });
 
   // Actions
   const fetchProjects = async () => {
-    isLoading.value = true
+    isLoading.value = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Mock data
-      projects.value = [
-        {
-          id: '1',
-          title: 'Digital Transformation Initiative',
-          description: 'Modernizing DOST systems and processes',
-          status: 'active',
-          priority: 'high',
-          startDate: '2024-01-15',
-          endDate: '2024-12-31',
-          budget: 5000000,
-          spent: 2500000,
-          progress: 65,
-          projectManager: 'Juan Dela Cruz',
-          department: 'IT Department',
-          teamMembers: ['Alice', 'Bob', 'Charlie'],
-          createdAt: '2024-01-10',
-          updatedAt: '2024-01-18'
-        },
-        {
-          id: '2',
-          title: 'Research and Development Program',
-          description: 'Supporting local innovation and research',
-          status: 'active',
-          priority: 'critical',
-          startDate: '2024-02-01',
-          endDate: '2024-11-30',
-          budget: 8000000,
-          spent: 3200000,
-          progress: 45,
-          projectManager: 'Maria Santos',
-          department: 'R&D Department',
-          teamMembers: ['David', 'Eve'],
-          createdAt: '2024-01-20',
-          updatedAt: '2024-01-18'
-        },
-        {
-          id: '3',
-          title: 'Community Outreach Program',
-          description: 'Science and technology awareness campaign',
-          status: 'completed',
-          priority: 'medium',
-          startDate: '2023-06-01',
-          endDate: '2023-12-31',
-          budget: 1500000,
-          spent: 1450000,
-          progress: 100,
-          projectManager: 'Pedro Garcia',
-          department: 'Community Relations',
-          teamMembers: ['Frank', 'Grace'],
-          createdAt: '2023-05-15',
-          updatedAt: '2024-01-05'
-        }
-      ]
-
-      return { success: true }
-    } catch (error) {
-      console.error('Fetch projects error:', error)
-      return { success: false, error: 'Failed to fetch projects' }
+      const response = await api.get("/projects");
+      projects.value = response.data.map(mapProject);
+      return { success: true };
+    } catch (error: any) {
+      console.error("Fetch projects error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to fetch projects",
+      };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   const fetchProjectById = async (id: string) => {
-    isLoading.value = true
+    isLoading.value = true;
+    currentProject.value = null;
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 300))
-      
-      const project = projects.value.find(p => p.id === id)
-      currentProject.value = project || null
-      
-      return { success: true, data: project }
-    } catch (error) {
-      console.error('Fetch project error:', error)
-      return { success: false, error: 'Failed to fetch project' }
+      const response = await api.get(`/projects/${id}`);
+      // Handle both direct response and nested data response
+      const projectData = response.data.data || response.data;
+      currentProject.value = mapProject(projectData);
+      return { success: true, data: currentProject.value };
+    } catch (error: any) {
+      console.error("Fetch project error:", error);
+      currentProject.value = null;
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to fetch project",
+      };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
-  const createProject = async (projectData: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>) => {
-    isLoading.value = true
+  const createProject = async (
+    projectData: Omit<Project, "id" | "createdAt" | "updatedAt">,
+  ) => {
+    isLoading.value = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const newProject: Project = {
-        ...projectData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      }
-      
-      projects.value.push(newProject)
-      
-      return { success: true, data: newProject }
-    } catch (error) {
-      console.error('Create project error:', error)
-      return { success: false, error: 'Failed to create project' }
+      const payload = {
+        title: projectData.title,
+        description: projectData.description,
+        status: projectData.status,
+        priority: projectData.priority,
+        start_date: projectData.startDate,
+        end_date: projectData.endDate,
+        budget: projectData.budget,
+        spent: projectData.spent,
+        progress: projectData.progress,
+        project_manager: projectData.projectManager,
+        department: projectData.department,
+        team_members: projectData.teamMembers,
+      };
+
+      const response = await api.post("/projects", payload);
+      const newProject = mapProject(response.data);
+      projects.value.push(newProject);
+
+      return { success: true, data: newProject };
+    } catch (error: any) {
+      console.error("Create project error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to create project",
+      };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
-  const updateProject = async (id: string, updates: Partial<Omit<Project, 'id' | 'createdAt' | 'updatedAt'>>) => {
-    isLoading.value = true
+  const updateProject = async (id: string, updates: Partial<Project>) => {
+    isLoading.value = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
+      const payload: any = {};
 
-      const index = projects.value.findIndex(p => p.id === id)
+      if (updates.title) payload.title = updates.title;
+      if (updates.description) payload.description = updates.description;
+      if (updates.status) payload.status = updates.status;
+      if (updates.priority) payload.priority = updates.priority;
+      if (updates.startDate) payload.start_date = updates.startDate;
+      if (updates.endDate) payload.end_date = updates.endDate;
+      if (updates.budget !== undefined) payload.budget = updates.budget;
+      if (updates.spent !== undefined) payload.spent = updates.spent;
+      if (updates.progress !== undefined) payload.progress = updates.progress;
+      if (updates.projectManager)
+        payload.project_manager = updates.projectManager;
+      if (updates.department) payload.department = updates.department;
+      if (updates.teamMembers) payload.team_members = updates.teamMembers;
+
+      const response = await api.put(`/projects/${id}`, payload);
+      const updatedProject = mapProject(response.data);
+
+      const index = projects.value.findIndex((p) => p.id === id);
       if (index !== -1) {
-        projects.value[index] = {
-          ...projects.value[index],
-          ...updates,
-          updatedAt: new Date().toISOString()
-        } as Project
-        const updatedProject = projects.value[index]
-        
-        return { success: true, data: updatedProject }
+        projects.value[index] = updatedProject;
       }
-      
-      return { success: false, error: 'Project not found' }
-    } catch (error) {
-      console.error('Update project error:', error)
-      return { success: false, error: 'Failed to update project' }
+
+      return { success: true, data: updatedProject };
+    } catch (error: any) {
+      console.error("Update project error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to update project",
+      };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   const deleteProject = async (id: string) => {
-    isLoading.value = true
+    isLoading.value = true;
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const index = projects.value.findIndex(p => p.id === id)
+      await api.delete(`/projects/${id}`);
+
+      const index = projects.value.findIndex((p) => p.id === id);
       if (index !== -1) {
-        projects.value.splice(index, 1)
-        return { success: true }
+        projects.value.splice(index, 1);
       }
-      
-      return { success: false, error: 'Project not found' }
-    } catch (error) {
-      console.error('Delete project error:', error)
-      return { success: false, error: 'Failed to delete project' }
+
+      return { success: true };
+    } catch (error: any) {
+      console.error("Delete project error:", error);
+      return {
+        success: false,
+        error: error.response?.data?.message || "Failed to delete project",
+      };
     } finally {
-      isLoading.value = false
+      isLoading.value = false;
     }
-  }
+  };
 
   return {
     // State
@@ -238,6 +240,6 @@ export const useProjectsStore = defineStore('projects', () => {
     fetchProjectById,
     createProject,
     updateProject,
-    deleteProject
-  }
-})
+    deleteProject,
+  };
+});

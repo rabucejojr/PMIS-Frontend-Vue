@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import api from '@/services/api'
 
 export type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done'
 export type TaskPriority = 'low' | 'medium' | 'high' | 'urgent'
@@ -20,11 +21,9 @@ export interface Task {
 }
 
 export const useTasksStore = defineStore('tasks', () => {
-  // State
   const tasks = ref<Task[]>([])
   const isLoading = ref(false)
 
-  // Getters
   const tasksByStatus = computed(() => {
     const grouped: Record<TaskStatus, Task[]> = {
       'todo': [],
@@ -40,94 +39,29 @@ export const useTasksStore = defineStore('tasks', () => {
     return grouped
   })
 
-  const tasksByProject = (projectId: string) => {
-    return tasks.value.filter(t => t.projectId === projectId)
-  }
-
-  const overdueTasks = computed(() => {
-    const now = new Date()
-    return tasks.value.filter(t => 
-      t.status !== 'done' && new Date(t.dueDate) < now
-    )
+  const mapTask = (apiTask: any): Task => ({
+    id: apiTask.id.toString(),
+    title: apiTask.title,
+    description: apiTask.description,
+    status: apiTask.status,
+    priority: apiTask.priority,
+    projectId: apiTask.project_id.toString(),
+    assignedTo: apiTask.assigned_to || [],
+    dueDate: apiTask.due_date,
+    createdBy: apiTask.created_by.toString(),
+    createdAt: apiTask.created_at,
+    updatedAt: apiTask.updated_at,
+    tags: apiTask.tags || []
   })
 
-  const myTasks = (userId: string) => {
-    return tasks.value.filter(t => t.assignedTo.includes(userId))
-  }
-
-  // Actions
   const fetchTasks = async (projectId?: string) => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      // Mock data
-      tasks.value = [
-        {
-          id: '1',
-          title: 'Design system architecture',
-          description: 'Create technical design documents',
-          status: 'in-progress',
-          priority: 'high',
-          projectId: '1',
-          assignedTo: ['Alice', 'Bob'],
-          dueDate: '2024-02-15',
-          createdBy: 'Admin',
-          createdAt: '2024-01-10',
-          updatedAt: '2024-01-18',
-          tags: ['architecture', 'design']
-        },
-        {
-          id: '2',
-          title: 'Implement authentication',
-          description: 'Build login and registration system',
-          status: 'done',
-          priority: 'high',
-          projectId: '1',
-          assignedTo: ['Charlie'],
-          dueDate: '2024-01-20',
-          createdBy: 'Admin',
-          createdAt: '2024-01-05',
-          updatedAt: '2024-01-17',
-          tags: ['auth', 'security']
-        },
-        {
-          id: '3',
-          title: 'Database schema design',
-          description: 'Design and implement database models',
-          status: 'review',
-          priority: 'medium',
-          projectId: '1',
-          assignedTo: ['Alice'],
-          dueDate: '2024-02-10',
-          createdBy: 'Admin',
-          createdAt: '2024-01-12',
-          updatedAt: '2024-01-18',
-          tags: ['database']
-        },
-        {
-          id: '4',
-          title: 'Setup testing framework',
-          description: 'Configure unit and integration tests',
-          status: 'todo',
-          priority: 'medium',
-          projectId: '1',
-          assignedTo: ['Bob'],
-          dueDate: '2024-02-20',
-          createdBy: 'Admin',
-          createdAt: '2024-01-15',
-          updatedAt: '2024-01-15',
-          tags: ['testing']
-        }
-      ]
-
-      if (projectId) {
-        tasks.value = tasks.value.filter(t => t.projectId === projectId)
-      }
-
+      const params = projectId ? { project_id: projectId } : {}
+      const response = await api.get('/tasks', { params })
+      tasks.value = response.data.map(mapTask)
       return { success: true }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Fetch tasks error:', error)
       return { success: false, error: 'Failed to fetch tasks' }
     } finally {
@@ -135,23 +69,26 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  const createTask = async (taskData: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const createTask = async (taskData: any) => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const newTask: Task = {
-        ...taskData,
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+      const payload = {
+        title: taskData.title,
+        description: taskData.description,
+        status: taskData.status,
+        priority: taskData.priority,
+        project_id: taskData.projectId,
+        assigned_to: taskData.assignedTo,
+        due_date: taskData.dueDate,
+        tags: taskData.tags,
       }
-      
+
+      const response = await api.post('/tasks', payload)
+      const newTask = mapTask(response.data)
       tasks.value.push(newTask)
       
       return { success: true, data: newTask }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Create task error:', error)
       return { success: false, error: 'Failed to create task' }
     } finally {
@@ -159,26 +96,29 @@ export const useTasksStore = defineStore('tasks', () => {
     }
   }
 
-  const updateTask = async (id: string, updates: Partial<Omit<Task, 'id' | 'createdAt' | 'updatedAt'>>) => {
+  const updateTask = async (id: string, updates: any) => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 300))
+      const payload: any = {}
+      if (updates.title) payload.title = updates.title
+      if (updates.description) payload.description = updates.description
+      if (updates.status) payload.status = updates.status
+      if (updates.priority) payload.priority = updates.priority
+      if (updates.projectId) payload.project_id = updates.projectId
+      if (updates.assignedTo) payload.assigned_to = updates.assignedTo
+      if (updates.dueDate) payload.due_date = updates.dueDate
+      if (updates.tags) payload.tags = updates.tags
 
+      const response = await api.put(`/tasks/${id}`, payload)
+      const updatedTask = mapTask(response.data)
+      
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
-        tasks.value[index] = {
-          ...tasks.value[index],
-          ...updates,
-          updatedAt: new Date().toISOString()
-        } as Task
-        const updatedTask = tasks.value[index]
-        
-        return { success: true, data: updatedTask }
+        tasks.value[index] = updatedTask
       }
       
-      return { success: false, error: 'Task not found' }
-    } catch (error) {
+      return { success: true, data: updatedTask }
+    } catch (error: any) {
       console.error('Update task error:', error)
       return { success: false, error: 'Failed to update task' }
     } finally {
@@ -189,17 +129,15 @@ export const useTasksStore = defineStore('tasks', () => {
   const deleteTask = async (id: string) => {
     isLoading.value = true
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 300))
+      await api.delete(`/tasks/${id}`)
       
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
         tasks.value.splice(index, 1)
-        return { success: true }
       }
       
-      return { success: false, error: 'Task not found' }
-    } catch (error) {
+      return { success: true }
+    } catch (error: any) {
       console.error('Delete task error:', error)
       return { success: false, error: 'Failed to delete task' }
     } finally {
@@ -208,19 +146,29 @@ export const useTasksStore = defineStore('tasks', () => {
   }
 
   const updateTaskStatus = async (id: string, status: TaskStatus) => {
-    return updateTask(id, { status })
+    isLoading.value = true
+    try {
+      const response = await api.patch(`/tasks/${id}/status`, { status })
+      const updatedTask = mapTask(response.data)
+      
+      const index = tasks.value.findIndex(t => t.id === id)
+      if (index !== -1) {
+        tasks.value[index] = updatedTask
+      }
+      
+      return { success: true, data: updatedTask }
+    } catch (error: any) {
+      console.error('Update task status error:', error)
+      return { success: false, error: 'Failed to update task status' }
+    } finally {
+      isLoading.value = false
+    }
   }
 
   return {
-    // State
     tasks,
     isLoading,
-    // Getters
     tasksByStatus,
-    tasksByProject,
-    overdueTasks,
-    myTasks,
-    // Actions
     fetchTasks,
     createTask,
     updateTask,
