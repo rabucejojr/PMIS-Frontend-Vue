@@ -7,7 +7,7 @@ import { RouterView } from 'vue-router'
     <div class="w-full max-w-md">
       <!-- Logo/Branding -->
       <div class="mb-8 text-center">
-        <h1 class="text-3xl font-bold">DOST PMIS</h1>
+        <h1 class="text-3xl font-bold">DOST Surigao del Norte</h1>
         <p class="text-muted-foreground mt-2">
           Project Management Information System
         </p>

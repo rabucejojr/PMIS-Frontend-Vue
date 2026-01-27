@@ -86,7 +86,7 @@ const handleSubmit = (e: Event) => {
             required 
           />
         </div>
-        <div class="grid gap-2">
+        <div class="grid gap-2 pb-4">
           <Label for="password">Password</Label>
           <Input 
             id="password" 
