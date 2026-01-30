@@ -218,7 +218,7 @@ onMounted(() => {
               </Button>
             </div>
           </CardHeader>
-          <CardContent class="space-y-3 min-h-[500px]">
+          <CardContent class="space-y-3 min-h-125">
             <!-- Task Cards -->
             <div
               v-for="task in getColumnTasks(column.id as TaskStatus)"
