@@ -154,10 +154,18 @@ export const useAuthStore = defineStore('auth', () => {
   const initAuth = () => {
     const savedToken = localStorage.getItem('auth_token')
     const savedUser = localStorage.getItem('auth_user')
-    
+
     if (savedToken && savedUser) {
-      token.value = savedToken
-      user.value = JSON.parse(savedUser)
+      try {
+        token.value = savedToken
+        user.value = JSON.parse(savedUser)
+      } catch {
+        // Clear corrupted data
+        localStorage.removeItem('auth_token')
+        localStorage.removeItem('auth_user')
+        token.value = null
+        user.value = null
+      }
     }
   }
 

@@ -25,18 +25,18 @@ export const useUsersStore = defineStore('users', () => {
   const isLoading = ref(false)
 
   const mapUser = (apiUser: any): UserProfile => ({
-    id: apiUser.id.toString(),
-    email: apiUser.email,
-    username: apiUser.username,
-    fullName: apiUser.full_name,
-    role: apiUser.role,
-    department: apiUser.department,
-    position: apiUser.position,
-    status: apiUser.status,
+    id: apiUser.id?.toString() ?? '',
+    email: apiUser.email ?? '',
+    username: apiUser.username ?? '',
+    fullName: apiUser.full_name ?? '',
+    role: apiUser.role ?? 'staff',
+    department: apiUser.department ?? '',
+    position: apiUser.position ?? '',
+    status: apiUser.status ?? 'pending',
     avatar: apiUser.avatar,
     phone: apiUser.phone,
-    joinedAt: apiUser.created_at,
-    lastActive: apiUser.updated_at
+    joinedAt: apiUser.created_at ?? '',
+    lastActive: apiUser.updated_at ?? ''
   })
 
   const fetchUsers = async () => {
@@ -54,12 +54,16 @@ export const useUsersStore = defineStore('users', () => {
   }
 
   const createUser = async (userData: any) => {
+    if (!userData.password) {
+      return { success: false, error: 'Password is required' }
+    }
+
     isLoading.value = true
     try {
       const payload = {
         email: userData.email,
         username: userData.username,
-        password: userData.password || 'password123',
+        password: userData.password,
         full_name: userData.fullName,
         role: userData.role,
         department: userData.department,
@@ -71,7 +75,7 @@ export const useUsersStore = defineStore('users', () => {
       const response = await api.post('/users', payload)
       const newUser = mapUser(response.data)
       users.value.push(newUser)
-      
+
       return { success: true, data: newUser }
     } catch (error: any) {
       console.error('Create user error:', error)
@@ -85,23 +89,23 @@ export const useUsersStore = defineStore('users', () => {
     isLoading.value = true
     try {
       const payload: any = {}
-      if (updates.email) payload.email = updates.email
-      if (updates.username) payload.username = updates.username
-      if (updates.fullName) payload.full_name = updates.fullName
-      if (updates.role) payload.role = updates.role
-      if (updates.department) payload.department = updates.department
-      if (updates.position) payload.position = updates.position
-      if (updates.status) payload.status = updates.status
-      if (updates.phone) payload.phone = updates.phone
+      if (updates.email !== undefined) payload.email = updates.email
+      if (updates.username !== undefined) payload.username = updates.username
+      if (updates.fullName !== undefined) payload.full_name = updates.fullName
+      if (updates.role !== undefined) payload.role = updates.role
+      if (updates.department !== undefined) payload.department = updates.department
+      if (updates.position !== undefined) payload.position = updates.position
+      if (updates.status !== undefined) payload.status = updates.status
+      if (updates.phone !== undefined) payload.phone = updates.phone
 
       const response = await api.put(`/users/${id}`, payload)
       const updatedUser = mapUser(response.data)
-      
+
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
         users.value[index] = updatedUser
       }
-      
+
       return { success: true, data: updatedUser }
     } catch (error: any) {
       console.error('Update user error:', error)

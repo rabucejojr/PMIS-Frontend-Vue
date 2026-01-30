@@ -108,14 +108,22 @@ export const useSettingsStore = defineStore('settings', () => {
     // Load notification settings
     const savedNotifications = localStorage.getItem('notificationSettings')
     if (savedNotifications) {
-      notificationSettings.value = JSON.parse(savedNotifications)
+      try {
+        notificationSettings.value = JSON.parse(savedNotifications)
+      } catch {
+        localStorage.removeItem('notificationSettings')
+      }
     }
 
     // Load user preferences
     const savedPreferences = localStorage.getItem('userPreferences')
     if (savedPreferences) {
-      userPreferences.value = JSON.parse(savedPreferences)
-      theme.value = userPreferences.value.theme
+      try {
+        userPreferences.value = JSON.parse(savedPreferences)
+        theme.value = userPreferences.value.theme
+      } catch {
+        localStorage.removeItem('userPreferences')
+      }
     }
 
     initTheme()

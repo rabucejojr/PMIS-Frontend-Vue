@@ -40,18 +40,18 @@ export const useTasksStore = defineStore('tasks', () => {
   })
 
   const mapTask = (apiTask: any): Task => ({
-    id: apiTask.id.toString(),
-    title: apiTask.title,
-    description: apiTask.description,
-    status: apiTask.status,
-    priority: apiTask.priority,
-    projectId: apiTask.project_id.toString(),
-    assignedTo: apiTask.assigned_to || [],
-    dueDate: apiTask.due_date,
-    createdBy: apiTask.created_by.toString(),
-    createdAt: apiTask.created_at,
-    updatedAt: apiTask.updated_at,
-    tags: apiTask.tags || []
+    id: apiTask.id?.toString() ?? '',
+    title: apiTask.title ?? '',
+    description: apiTask.description ?? '',
+    status: apiTask.status ?? 'todo',
+    priority: apiTask.priority ?? 'medium',
+    projectId: apiTask.project_id?.toString() ?? '',
+    assignedTo: apiTask.assigned_to ?? [],
+    dueDate: apiTask.due_date ?? '',
+    createdBy: apiTask.created_by?.toString() ?? '',
+    createdAt: apiTask.created_at ?? '',
+    updatedAt: apiTask.updated_at ?? '',
+    tags: apiTask.tags ?? []
   })
 
   const fetchTasks = async (projectId?: string) => {
@@ -100,23 +100,23 @@ export const useTasksStore = defineStore('tasks', () => {
     isLoading.value = true
     try {
       const payload: any = {}
-      if (updates.title) payload.title = updates.title
-      if (updates.description) payload.description = updates.description
-      if (updates.status) payload.status = updates.status
-      if (updates.priority) payload.priority = updates.priority
-      if (updates.projectId) payload.project_id = updates.projectId
-      if (updates.assignedTo) payload.assigned_to = updates.assignedTo
-      if (updates.dueDate) payload.due_date = updates.dueDate
-      if (updates.tags) payload.tags = updates.tags
+      if (updates.title !== undefined) payload.title = updates.title
+      if (updates.description !== undefined) payload.description = updates.description
+      if (updates.status !== undefined) payload.status = updates.status
+      if (updates.priority !== undefined) payload.priority = updates.priority
+      if (updates.projectId !== undefined) payload.project_id = updates.projectId
+      if (updates.assignedTo !== undefined) payload.assigned_to = updates.assignedTo
+      if (updates.dueDate !== undefined) payload.due_date = updates.dueDate
+      if (updates.tags !== undefined) payload.tags = updates.tags
 
       const response = await api.put(`/tasks/${id}`, payload)
       const updatedTask = mapTask(response.data)
-      
+
       const index = tasks.value.findIndex(t => t.id === id)
       if (index !== -1) {
         tasks.value[index] = updatedTask
       }
-      
+
       return { success: true, data: updatedTask }
     } catch (error: any) {
       console.error('Update task error:', error)

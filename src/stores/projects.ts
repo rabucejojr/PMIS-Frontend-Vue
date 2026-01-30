@@ -168,19 +168,19 @@ export const useProjectsStore = defineStore("projects", () => {
     try {
       const payload: any = {};
 
-      if (updates.title) payload.title = updates.title;
-      if (updates.description) payload.description = updates.description;
-      if (updates.status) payload.status = updates.status;
-      if (updates.priority) payload.priority = updates.priority;
-      if (updates.startDate) payload.start_date = updates.startDate;
-      if (updates.endDate) payload.end_date = updates.endDate;
+      if (updates.title !== undefined) payload.title = updates.title;
+      if (updates.description !== undefined) payload.description = updates.description;
+      if (updates.status !== undefined) payload.status = updates.status;
+      if (updates.priority !== undefined) payload.priority = updates.priority;
+      if (updates.startDate !== undefined) payload.start_date = updates.startDate;
+      if (updates.endDate !== undefined) payload.end_date = updates.endDate;
       if (updates.budget !== undefined) payload.budget = updates.budget;
       if (updates.spent !== undefined) payload.spent = updates.spent;
       if (updates.progress !== undefined) payload.progress = updates.progress;
-      if (updates.projectManager)
+      if (updates.projectManager !== undefined)
         payload.project_manager = updates.projectManager;
-      if (updates.department) payload.department = updates.department;
-      if (updates.teamMembers) payload.team_members = updates.teamMembers;
+      if (updates.department !== undefined) payload.department = updates.department;
+      if (updates.teamMembers !== undefined) payload.team_members = updates.teamMembers;
 
       const response = await api.put(`/projects/${id}`, payload);
       const updatedProject = mapProject(response.data);

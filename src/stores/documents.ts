@@ -158,11 +158,9 @@ export const useDocumentsStore = defineStore('documents', () => {
   const downloadDocument = async (id: string) => {
     const document = documents.value.find(d => d.id === id)
     if (document) {
-      // TODO: In real app, this would download the actual file
-      console.log('Downloading:', document.name)
-      // Simulate download
-      alert(`Downloading: ${document.name}`)
-      return { success: true }
+      // TODO: In real app, this would download the actual file via URL
+      // For now, return success with document info for UI to handle
+      return { success: true, data: document }
     }
     return { success: false, error: 'Document not found' }
   }
