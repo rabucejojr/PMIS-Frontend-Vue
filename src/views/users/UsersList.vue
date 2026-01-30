@@ -59,6 +59,7 @@ const formData = ref({
   status: 'active' as UserStatus,
   phone: ''
 })
+const formError = ref('')
 
 const filteredUsers = computed(() => {
   let users = usersStore.users
@@ -117,6 +118,7 @@ const formatDate = (date: string) => {
 const openCreateDialog = () => {
   dialogMode.value = 'create'
   selectedUserId.value = null
+  formError.value = ''
   formData.value = {
     email: '',
     username: '',
@@ -136,6 +138,7 @@ const openEditDialog = (userId: string) => {
   if (user) {
     dialogMode.value = 'edit'
     selectedUserId.value = userId
+    formError.value = ''
     formData.value = {
       email: user.email,
       username: user.username,
@@ -152,12 +155,20 @@ const openEditDialog = (userId: string) => {
 }
 
 const handleSubmit = async () => {
+  formError.value = ''
+
+  let result
   if (dialogMode.value === 'create') {
-    await usersStore.createUser(formData.value)
+    result = await usersStore.createUser(formData.value)
   } else if (selectedUserId.value) {
-    await usersStore.updateUser(selectedUserId.value, formData.value)
+    result = await usersStore.updateUser(selectedUserId.value, formData.value)
   }
-  showDialog.value = false
+
+  if (result?.success) {
+    showDialog.value = false
+  } else {
+    formError.value = result?.error || 'An error occurred'
+  }
 }
 
 const openDeleteDialog = (user: UserProfile) => {
@@ -364,6 +375,9 @@ onMounted(() => {
           </DialogDescription>
         </DialogHeader>
         <form @submit.prevent="handleSubmit">
+          <div v-if="formError" class="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">
+            {{ formError }}
+          </div>
           <div class="grid gap-4 py-4">
             <div class="grid gap-2">
               <Label for="fullName">Full Name *</Label>

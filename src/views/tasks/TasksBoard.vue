@@ -56,6 +56,7 @@ const formData = ref({
   dueDate: '',
   tags: [] as string[]
 })
+const formError = ref('')
 
 const columns = [
   { id: 'todo', title: 'To Do', color: 'border-t-gray-500' },
@@ -88,7 +89,7 @@ const openCreateDialog = (status: TaskStatus) => {
     description: '',
     status,
     priority: 'medium',
-    projectId: projectsStore.projects[0]?.id || '',
+    projectId: '',
     assignedTo: [],
     dueDate: '',
     tags: []
@@ -116,17 +117,30 @@ const openEditDialog = (taskId: string) => {
 }
 
 const handleSubmit = async () => {
+  formError.value = ''
+
+  if (!formData.value.projectId) {
+    formError.value = 'Please select a project'
+    return
+  }
+
   const taskData = {
     ...formData.value,
     createdBy: 'Admin'
   }
 
+  let result
   if (dialogMode.value === 'create') {
-    await tasksStore.createTask(taskData)
+    result = await tasksStore.createTask(taskData)
   } else if (selectedTaskId.value) {
-    await tasksStore.updateTask(selectedTaskId.value, taskData)
+    result = await tasksStore.updateTask(selectedTaskId.value, taskData)
   }
-  showDialog.value = false
+
+  if (result?.success) {
+    showDialog.value = false
+  } else {
+    formError.value = result?.error || 'An error occurred'
+  }
 }
 
 const openDeleteDialog = (task: Task) => {
@@ -291,6 +305,9 @@ onMounted(() => {
           </DialogDescription>
         </DialogHeader>
         <form @submit.prevent="handleSubmit">
+          <div v-if="formError" class="mb-4 p-3 bg-destructive/10 text-destructive text-sm rounded-md">
+            {{ formError }}
+          </div>
           <div class="grid gap-4 py-4">
             <div class="grid gap-2">
               <Label for="title">Title *</Label>
@@ -346,13 +363,13 @@ onMounted(() => {
 
             <div class="grid gap-2">
               <Label for="project">Project *</Label>
-              <Select v-model="formData.projectId">
+              <Select v-model="formData.projectId" :disabled="projectsStore.projects.length === 0">
                 <SelectTrigger id="project">
                   <SelectValue placeholder="Select project" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem 
-                    v-for="project in projectsStore.projects" 
+                  <SelectItem
+                    v-for="project in projectsStore.projects"
                     :key="project.id"
                     :value="project.id"
                   >
@@ -360,6 +377,9 @@ onMounted(() => {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <p v-if="projectsStore.projects.length === 0" class="text-xs text-muted-foreground">
+                No projects available. Please create a project first.
+              </p>
             </div>
 
             <div class="grid gap-2">

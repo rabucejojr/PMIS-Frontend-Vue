@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Bell, Search, Sun, Moon } from 'lucide-vue-next'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -9,12 +9,44 @@ const settingsStore = useSettingsStore()
 
 const searchQuery = ref('')
 const hasNotifications = ref(true)
+const currentDate = ref(new Date())
+const systemPrefersDark = ref(window.matchMedia('(prefers-color-scheme: dark)').matches)
+
+// Update date at midnight
+let dateInterval: ReturnType<typeof setInterval>
+onMounted(() => {
+  // Update date every minute to catch midnight
+  dateInterval = setInterval(() => {
+    currentDate.value = new Date()
+  }, 60000)
+
+  // Listen for system theme changes
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const handleChange = (e: MediaQueryListEvent) => {
+    systemPrefersDark.value = e.matches
+  }
+  mediaQuery.addEventListener('change', handleChange)
+
+  onUnmounted(() => {
+    clearInterval(dateInterval)
+    mediaQuery.removeEventListener('change', handleChange)
+  })
+})
 
 const isDarkMode = computed(() => {
   if (settingsStore.theme === 'dark') return true
   if (settingsStore.theme === 'light') return false
-  // System theme - check if dark class is applied
-  return document.documentElement.classList.contains('dark')
+  // System theme - use reactive ref
+  return systemPrefersDark.value
+})
+
+const formattedDate = computed(() => {
+  return currentDate.value.toLocaleDateString('en-US', {
+    weekday: 'short',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 })
 
 const toggleTheme = () => {
@@ -69,12 +101,7 @@ const handleSearch = () => {
 
       <!-- Date & Time -->
       <div class="text-sm text-muted-foreground hidden md:block">
-        {{ new Date().toLocaleDateString('en-US', { 
-          weekday: 'short', 
-          year: 'numeric', 
-          month: 'short', 
-          day: 'numeric' 
-        }) }}
+        {{ formattedDate }}
       </div>
     </div>
   </header>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { useProjectsStore, type ProjectStatus, type ProjectPriority } from '@/stores'
+import { useProjectsStore, type ProjectStatus, type ProjectPriority, type Project } from '@/stores'
 import { Plus, Search, MoreHorizontal, Eye, Edit, Trash2 } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +44,8 @@ const projectsStore = useProjectsStore()
 const searchQuery = ref('')
 const statusFilter = ref<ProjectStatus | 'all'>('all')
 const priorityFilter = ref<ProjectPriority | 'all'>('all')
+const showDeleteDialog = ref(false)
+const projectToDelete = ref<Project | null>(null)
 
 const filteredProjects = computed(() => {
   let projects = projectsStore.projects
@@ -86,10 +96,22 @@ const editProject = (id: string) => {
   router.push(`/projects/${id}/edit`)
 }
 
-const deleteProject = async (id: string) => {
-  if (confirm('Are you sure you want to delete this project?')) {
-    await projectsStore.deleteProject(id)
+const openDeleteDialog = (project: Project) => {
+  projectToDelete.value = project
+  showDeleteDialog.value = true
+}
+
+const confirmDelete = async () => {
+  if (projectToDelete.value) {
+    await projectsStore.deleteProject(projectToDelete.value.id)
+    showDeleteDialog.value = false
+    projectToDelete.value = null
   }
+}
+
+const cancelDelete = () => {
+  showDeleteDialog.value = false
+  projectToDelete.value = null
 }
 
 const clearFilters = () => {
@@ -242,8 +264,8 @@ onMounted(() => {
                     <Edit class="h-4 w-4 mr-2" />
                     Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    @click="deleteProject(project.id)"
+                  <DropdownMenuItem
+                    @click="openDeleteDialog(project)"
                     class="text-destructive"
                   >
                     <Trash2 class="h-4 w-4 mr-2" />
@@ -261,5 +283,21 @@ onMounted(() => {
     <div class="mt-4 text-sm text-muted-foreground">
       Showing {{ filteredProjects.length }} of {{ projectsStore.projects.length }} projects
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="showDeleteDialog">
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Delete Project</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete "{{ projectToDelete?.title }}"? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="outline" @click="cancelDelete">Cancel</Button>
+          <Button variant="destructive" @click="confirmDelete">Delete</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>

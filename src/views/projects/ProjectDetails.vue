@@ -52,7 +52,7 @@ const formatDate = (date: string) => {
 }
 
 const budgetUsed = computed(() => {
-  if (!project.value) return 0
+  if (!project.value || project.value.budget === 0) return 0
   return (project.value.spent / project.value.budget) * 100
 })
 
