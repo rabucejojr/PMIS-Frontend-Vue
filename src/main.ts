@@ -3,7 +3,7 @@ import { createPinia } from 'pinia'
 import App from './App.vue'
 import router from './router'
 import '@/style.css'
-import { useSettingsStore } from './stores'
+import { useSettingsStore, useAuthStore } from './stores'
 
 const app = createApp(App)
 const pinia = createPinia()
@@ -11,8 +11,12 @@ const pinia = createPinia()
 app.use(pinia)
 app.use(router)
 
-// Initialize theme after pinia is installed
+// Initialize stores after pinia is installed
 const settingsStore = useSettingsStore()
-settingsStore.initTheme()
+const authStore = useAuthStore()
+
+// Load settings and restore auth state
+settingsStore.loadSettings()
+authStore.initAuth()
 
 app.mount('#app')
