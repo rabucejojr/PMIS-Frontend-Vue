@@ -1,12 +1,33 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
+// Utility function to handle dynamic import errors
+const lazyLoadView = (importFunc: () => Promise<any>) => {
+  return () =>
+    importFunc().catch((error) => {
+      console.error('Failed to load chunk:', error)
+      
+      // Check if it's a chunk load error
+      if (
+        error.message?.includes('Failed to fetch dynamically imported module') ||
+        error.name === 'TypeError'
+      ) {
+        // Clear any stale cache and reload
+        console.warn('Detected stale chunk, reloading page...')
+        window.location.reload()
+      }
+      
+      // Re-throw for other errors
+      throw error
+    })
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
     {
       path: '/auth',
-      component: () => import('@/layouts/AuthLayout.vue'),
+      component: lazyLoadView(() => import('@/layouts/AuthLayout.vue')),
       children: [
         {
           path: '',
@@ -15,14 +36,14 @@ const router = createRouter({
         {
           path: 'login',
           name: 'login',
-          component: () => import('@/views/auth/AuthPage.vue'),
+          component: lazyLoadView(() => import('@/views/auth/AuthPage.vue')),
           meta: { requiresGuest: true },
         },
       ],
     },
     {
       path: '/',
-      component: () => import('@/layouts/DashboardLayout.vue'),
+      component: lazyLoadView(() => import('@/layouts/DashboardLayout.vue')),
       meta: { requiresAuth: true },
       children: [
         {
@@ -32,62 +53,62 @@ const router = createRouter({
         {
           path: 'dashboard',
           name: 'dashboard',
-          component: () => import('@/views/dashboard/DashboardHome.vue'),
+          component: lazyLoadView(() => import('@/views/dashboard/DashboardHome.vue')),
         },
         {
           path: 'projects',
           name: 'projects',
-          component: () => import('@/views/projects/ProjectsList.vue'),
+          component: lazyLoadView(() => import('@/views/projects/ProjectsList.vue')),
         },
         {
           path: 'projects/create',
           name: 'projects-create',
-          component: () => import('@/views/projects/ProjectCreate.vue'),
+          component: lazyLoadView(() => import('@/views/projects/ProjectCreate.vue')),
           meta: { requiresRole: ['admin', 'project_manager'] },
         },
         {
           path: 'projects/:id',
           name: 'project-details',
-          component: () => import('@/views/projects/ProjectDetails.vue'),
+          component: lazyLoadView(() => import('@/views/projects/ProjectDetails.vue')),
         },
         {
           path: 'projects/:id/edit',
           name: 'project-edit',
-          component: () => import('@/views/projects/ProjectEdit.vue'),
+          component: lazyLoadView(() => import('@/views/projects/ProjectEdit.vue')),
           meta: { requiresRole: ['admin', 'project_manager'] },
         },
         {
           path: 'tasks',
           name: 'tasks',
-          component: () => import('@/views/tasks/TasksBoard.vue'),
+          component: lazyLoadView(() => import('@/views/tasks/TasksBoard.vue')),
         },
         {
           path: 'documents',
           name: 'documents',
-          component: () => import('@/views/documents/DocumentsList.vue'),
+          component: lazyLoadView(() => import('@/views/documents/DocumentsList.vue')),
         },
         {
           path: 'reports',
           name: 'reports',
-          component: () => import('@/views/reports/ReportsPage.vue'),
+          component: lazyLoadView(() => import('@/views/reports/ReportsPage.vue')),
         },
         {
           path: 'users',
           name: 'users',
-          component: () => import('@/views/users/UsersList.vue'),
+          component: lazyLoadView(() => import('@/views/users/UsersList.vue')),
           meta: { requiresRole: ['admin'] },
         },
         {
           path: 'settings',
           name: 'settings',
-          component: () => import('@/views/settings/SettingsPage.vue'),
+          component: lazyLoadView(() => import('@/views/settings/SettingsPage.vue')),
         },
       ],
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
-      component: () => import('@/views/NotFound.vue'),
+      component: lazyLoadView(() => import('@/views/NotFound.vue')),
     },
   ],
 })
