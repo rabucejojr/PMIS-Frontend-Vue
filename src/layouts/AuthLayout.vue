@@ -11,9 +11,6 @@ import { RouterView } from 'vue-router'
         <p class="text-muted-foreground mt-2">
           Project Management Information System
         </p>
-        <p class="text-sm text-muted-foreground">
-          DOST Surigao del Norte
-        </p>
       </div>
 
       <!-- Auth Forms -->

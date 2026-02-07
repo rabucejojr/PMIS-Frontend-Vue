@@ -9,35 +9,38 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 const mode = ref<'login' | 'register'>('login')
+const errorMessage = ref('')
 
 const handleSubmit = async (data: { email: string; password: string; username?: string }) => {
+  errorMessage.value = '' // Clear previous errors
   let result
-  
+
   if (mode.value === 'login') {
     result = await authStore.login(data.email, data.password)
   } else {
     result = await authStore.register(data.username!, data.email, data.password)
   }
-  
+
   if (result.success) {
     // Redirect to original page or dashboard
     const redirect = route.query.redirect as string
     router.push(redirect || '/dashboard')
   } else {
-    // TODO: Show error message (you can use a toast notification library)
-    alert(result.error || 'Authentication failed')
+    errorMessage.value = result.error || 'Authentication failed'
   }
 }
 
 const toggleMode = () => {
   mode.value = mode.value === 'login' ? 'register' : 'login'
+  errorMessage.value = '' // Clear error when switching modes
 }
 </script>
 
 <template>
-  <AuthForm 
+  <AuthForm
     :mode="mode"
     :loading="authStore.isLoading"
+    :error-message="errorMessage"
     @submit="handleSubmit"
     @toggle-mode="toggleMode"
   />
