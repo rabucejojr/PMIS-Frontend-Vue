@@ -23,6 +23,7 @@ export interface UserProfile {
 export const useUsersStore = defineStore('users', () => {
   const users = ref<UserProfile[]>([])
   const isLoading = ref(false)
+  const currentUser = ref<UserProfile | null>(null)
 
   const mapUser = (apiUser: any): UserProfile => ({
     id: apiUser.id?.toString() ?? '',
@@ -39,15 +40,59 @@ export const useUsersStore = defineStore('users', () => {
     lastActive: apiUser.updated_at ?? ''
   })
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (forceRefresh = false) => {
+    // Use cached data if available (unless forcing refresh)
+    if (!forceRefresh && users.value.length > 0) {
+      return { success: true }
+    }
+
     isLoading.value = true
     try {
       const response = await api.get('/users')
-      users.value = response.data.map(mapUser)
+      const usersData = response.data.data || response.data
+      users.value = Array.isArray(usersData) ? usersData.map(mapUser) : []
       return { success: true }
     } catch (error: any) {
       console.error('Fetch users error:', error)
       return { success: false, error: 'Failed to fetch users' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchUserById = async (id: string, forceRefresh = false) => {
+    // Check if user is already in cache (unless forcing refresh)
+    if (!forceRefresh) {
+      const cachedUser = users.value.find((u) => u.id === id)
+      if (cachedUser) {
+        currentUser.value = cachedUser
+        return { success: true, data: currentUser.value }
+      }
+    }
+
+    isLoading.value = true
+    currentUser.value = null
+    try {
+      const response = await api.get(`/users/${id}`)
+      const userData = response.data.data || response.data
+      currentUser.value = mapUser(userData)
+
+      // Update the users array cache if the user exists there
+      const index = users.value.findIndex((u) => u.id === id)
+      if (index !== -1) {
+        users.value[index] = currentUser.value
+      } else {
+        users.value.push(currentUser.value)
+      }
+
+      return { success: true, data: currentUser.value }
+    } catch (error: any) {
+      console.error('Fetch user error:', error)
+      currentUser.value = null
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch user',
+      }
     } finally {
       isLoading.value = false
     }
@@ -137,7 +182,9 @@ export const useUsersStore = defineStore('users', () => {
   return {
     users,
     isLoading,
+    currentUser,
     fetchUsers,
+    fetchUserById,
     createUser,
     updateUser,
     deleteUser

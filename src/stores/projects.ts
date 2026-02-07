@@ -93,7 +93,8 @@ export const useProjectsStore = defineStore("projects", () => {
     isLoading.value = true;
     try {
       const response = await api.get("/projects");
-      projects.value = response.data.map(mapProject);
+      const projectsData = response.data.data || response.data;
+      projects.value = Array.isArray(projectsData) ? projectsData.map(mapProject) : [];
       return { success: true };
     } catch (error: any) {
       console.error("Fetch projects error:", error);
@@ -106,7 +107,16 @@ export const useProjectsStore = defineStore("projects", () => {
     }
   };
 
-  const fetchProjectById = async (id: string) => {
+  const fetchProjectById = async (id: string, forceRefresh = false) => {
+    // Check if project is already in cache (unless forcing refresh)
+    if (!forceRefresh) {
+      const cachedProject = projects.value.find((p) => p.id === id);
+      if (cachedProject) {
+        currentProject.value = cachedProject;
+        return { success: true, data: currentProject.value };
+      }
+    }
+
     isLoading.value = true;
     currentProject.value = null;
     try {
@@ -114,6 +124,16 @@ export const useProjectsStore = defineStore("projects", () => {
       // Handle both direct response and nested data response
       const projectData = response.data.data || response.data;
       currentProject.value = mapProject(projectData);
+
+      // Update the projects array cache if the project exists there
+      const index = projects.value.findIndex((p) => p.id === id);
+      if (index !== -1) {
+        projects.value[index] = currentProject.value;
+      } else {
+        // Add to cache if it's a new project we haven't seen before
+        projects.value.push(currentProject.value);
+      }
+
       return { success: true, data: currentProject.value };
     } catch (error: any) {
       console.error("Fetch project error:", error);

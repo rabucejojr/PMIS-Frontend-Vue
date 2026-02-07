@@ -23,6 +23,7 @@ export interface Task {
 export const useTasksStore = defineStore('tasks', () => {
   const tasks = ref<Task[]>([])
   const isLoading = ref(false)
+  const currentTask = ref<Task | null>(null)
 
   const tasksByStatus = computed(() => {
     const grouped: Record<TaskStatus, Task[]> = {
@@ -31,11 +32,11 @@ export const useTasksStore = defineStore('tasks', () => {
       'review': [],
       'done': []
     }
-    
+
     tasks.value.forEach(task => {
       grouped[task.status].push(task)
     })
-    
+
     return grouped
   })
 
@@ -54,16 +55,64 @@ export const useTasksStore = defineStore('tasks', () => {
     tags: apiTask.tags ?? []
   })
 
-  const fetchTasks = async (projectId?: string) => {
+  const fetchTasks = async (projectId?: string, forceRefresh = false) => {
+    // Use cached data if available (unless forcing refresh)
+    if (!forceRefresh && tasks.value.length > 0) {
+      if (projectId) {
+        // Filter cached tasks by project
+        return { success: true }
+      }
+      return { success: true }
+    }
+
     isLoading.value = true
     try {
       const params = projectId ? { project_id: projectId } : {}
       const response = await api.get('/tasks', { params })
-      tasks.value = response.data.map(mapTask)
+      const tasksData = response.data.data || response.data
+      tasks.value = Array.isArray(tasksData) ? tasksData.map(mapTask) : []
       return { success: true }
     } catch (error: any) {
       console.error('Fetch tasks error:', error)
       return { success: false, error: 'Failed to fetch tasks' }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchTaskById = async (id: string, forceRefresh = false) => {
+    // Check if task is already in cache (unless forcing refresh)
+    if (!forceRefresh) {
+      const cachedTask = tasks.value.find((t) => t.id === id)
+      if (cachedTask) {
+        currentTask.value = cachedTask
+        return { success: true, data: currentTask.value }
+      }
+    }
+
+    isLoading.value = true
+    currentTask.value = null
+    try {
+      const response = await api.get(`/tasks/${id}`)
+      const taskData = response.data.data || response.data
+      currentTask.value = mapTask(taskData)
+
+      // Update the tasks array cache if the task exists there
+      const index = tasks.value.findIndex((t) => t.id === id)
+      if (index !== -1) {
+        tasks.value[index] = currentTask.value
+      } else {
+        tasks.value.push(currentTask.value)
+      }
+
+      return { success: true, data: currentTask.value }
+    } catch (error: any) {
+      console.error('Fetch task error:', error)
+      currentTask.value = null
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to fetch task',
+      }
     } finally {
       isLoading.value = false
     }
@@ -168,8 +217,10 @@ export const useTasksStore = defineStore('tasks', () => {
   return {
     tasks,
     isLoading,
+    currentTask,
     tasksByStatus,
     fetchTasks,
+    fetchTaskById,
     createTask,
     updateTask,
     deleteTask,

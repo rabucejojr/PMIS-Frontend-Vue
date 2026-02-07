@@ -23,9 +23,17 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const userRole = computed(() => user.value?.role)
   const isAdmin = computed(() => user.value?.role === 'admin')
-  const isProjectManager = computed(() => 
+  const isProjectManager = computed(() =>
     user.value?.role === 'admin' || user.value?.role === 'project_manager'
   )
+
+  // Helper function to save auth data to state and localStorage
+  const saveAuthData = (userData: User, authToken: string) => {
+    user.value = userData
+    token.value = authToken
+    localStorage.setItem('auth_token', authToken)
+    localStorage.setItem('auth_user', JSON.stringify(userData))
+  }
 
   // Dummy credentials
   const DUMMY_ACCOUNTS = [
@@ -68,34 +76,30 @@ export const useAuthStore = defineStore('auth', () => {
   const login = async (email: string, password: string): Promise<AuthResult> => {
     isLoading.value = true
     try {
-      const response = await api.post('/login', { email, password })
+      // Try API login with 10 second timeout
+      const response = await api.post('/login', { email, password }, { timeout: 10000 })
 
-      user.value = response.data.user
-      token.value = response.data.token
-
-      localStorage.setItem('auth_token', response.data.token)
-      localStorage.setItem('auth_user', JSON.stringify(response.data.user))
-
+      saveAuthData(response.data.user, response.data.token)
       return { success: true }
-    } catch {
+    } catch (error: any) {
       // Fallback to dummy accounts for testing
       const account = DUMMY_ACCOUNTS.find(
         (a) => a.email === email && a.password === password
       )
 
       if (account) {
-        user.value = account.user
-        token.value = 'dummy_token_' + account.user.id
-
-        localStorage.setItem('auth_token', token.value)
-        localStorage.setItem('auth_user', JSON.stringify(account.user))
-
+        saveAuthData(account.user, 'dummy_token_' + account.user.id)
         return { success: true }
       }
 
+      // Return specific error message if available
+      const errorMessage = error.response?.data?.message ||
+                          error.message ||
+                          'Invalid email or password'
+
       return {
         success: false,
-        error: 'Invalid email or password'
+        error: errorMessage
       }
     } finally {
       isLoading.value = false
@@ -105,6 +109,7 @@ export const useAuthStore = defineStore('auth', () => {
   const register = async (username: string, email: string, password: string): Promise<AuthResult> => {
     isLoading.value = true
     try {
+      // Try API register with 10 second timeout
       const response = await api.post('/register', {
         email,
         username,
@@ -112,16 +117,11 @@ export const useAuthStore = defineStore('auth', () => {
         full_name: username,
         department: 'DOST Surigao del Norte',
         position: 'Staff'
-      })
+      }, { timeout: 10000 })
 
-      user.value = response.data.user
-      token.value = response.data.token
-
-      localStorage.setItem('auth_token', response.data.token)
-      localStorage.setItem('auth_user', JSON.stringify(response.data.user))
-
+      saveAuthData(response.data.user, response.data.token)
       return { success: true }
-    } catch {
+    } catch (error: any) {
       // Fallback: create a dummy user for testing
       const newUser: User = {
         id: Date.now().toString(),
@@ -131,12 +131,7 @@ export const useAuthStore = defineStore('auth', () => {
         department: 'DOST Surigao del Norte'
       }
 
-      user.value = newUser
-      token.value = 'dummy_token_' + newUser.id
-
-      localStorage.setItem('auth_token', token.value)
-      localStorage.setItem('auth_user', JSON.stringify(newUser))
-
+      saveAuthData(newUser, 'dummy_token_' + newUser.id)
       return { success: true }
     } finally {
       isLoading.value = false
